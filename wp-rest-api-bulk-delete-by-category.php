@@ -168,20 +168,16 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 			$html = '';
 
-			if ( ! is_user_logged_in() ) {
-
-				return $html;
-			}
-
 			wp_enqueue_script( 'rbd' );
 
 			$defaults = array(
-				'url'          => '',
-				'username'     => '',
-				'app-password' => '',
-				'category'     => NULL,
-				'trash'        => TRUE,
-				'button-text'  => '',
+				'url'           => '',
+				'username'      => '',
+				'app-password'  => '',
+				'category'      => NULL,
+				'trash'         => TRUE,
+				'button-text'   => '',
+				'require-login' => TRUE,
 			);
 
 			$atts = shortcode_atts( $defaults, $atts, $tag );
@@ -190,6 +186,12 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 			$atts['url']      = filter_var( $atts['url'], FILTER_SANITIZE_URL );
 
 			self::toBoolean( $atts['trash'] );
+			self::toBoolean( $atts['require-login'] );
+
+			if ( ! is_user_logged_in() && $atts['require-login'] ) {
+
+				return $html;
+			}
 
 			if ( 0 > strlen( $atts['url'] ) ) {
 
