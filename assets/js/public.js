@@ -4,9 +4,9 @@
 
 		e.preventDefault();
 
-		if ( confirm( 'Are you sure?' ) ) {
+		var $this = $( this );
 
-			var $this = $( this );
+		if ( confirm( $this.data( 'confirm' ) ) ) {
 
 			var text = $this.text();
 			var url  = $this.data( 'url' );

@@ -177,13 +177,15 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 				'category'      => NULL,
 				'trash'         => TRUE,
 				'button-text'   => '',
+				'confirm-text'  => __( 'Are you Sure? This action cannot be undone.', 'wp-rest-api-bulk-delete-by-category' ),
 				'require-login' => TRUE,
 			);
 
 			$atts = shortcode_atts( $defaults, $atts, $tag );
 
-			$atts['category'] = absint( $atts['category'] );
-			$atts['url']      = filter_var( $atts['url'], FILTER_SANITIZE_URL );
+			$atts['category']     = absint( $atts['category'] );
+			$atts['url']          = filter_var( $atts['url'], FILTER_SANITIZE_URL );
+			$atts['confirm-text'] = sanitize_text_field( $atts['confirm-text'] );
 
 			self::toBoolean( $atts['trash'] );
 			self::toBoolean( $atts['require-login'] );
@@ -244,10 +246,11 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 			}
 
 			$html = sprintf(
-				'<button class="rbd" data-url="%1$s" data-key="%2$s" data-category="%3$d">' . $text . '</button>',
+				'<button class="rbd" data-url="%1$s" data-key="%2$s" data-category="%3$d" data-confirm="%4$s">' . $text . '</button>',
 				trailingslashit( $atts['url'] ),
 				base64_encode( $atts['username'] . ':' . $atts['app-password'] ),
-				$atts['category']
+				$atts['category'],
+				$atts['confirm-text']
 			);
 
 			return $html;
