@@ -68,6 +68,15 @@ class WP_REST_API_BULK_Delete_By_Category_REST_Controller extends WP_REST_Contro
 				),
 			)
 		);
+
+		register_rest_route(
+			$this->namespace,
+			'/search',
+			array(
+				'methods'  => 'GET',
+				'callback' => array( $this, 'search' ),
+			)
+		);
 	}
 
 	/**
@@ -104,6 +113,88 @@ class WP_REST_API_BULK_Delete_By_Category_REST_Controller extends WP_REST_Contro
 		}
 
 		return $this->prepare_item_for_response( array(), $request );
+	}
+
+	/**
+	 * Search for post by title.
+	 *
+	 * @since 2.0
+	 *
+	 * @param WP_REST_Request $request Full data about the request.
+	 *
+	 * @return WP_Error|WP_REST_Request
+	 */
+	public function search( $request ) {
+
+		$params = array(
+			'post_type'      => array( 'post', 'page' ),
+			'post_status'    => 'publish',
+			'posts_per_page' => 30,
+			's'              => $request['term'],
+		);
+
+		if ( empty( $request['term'] ) ) {
+
+			return $this->prepare_item_for_response( array(), $request );
+		}
+
+		if ( isset( $request['category'] ) && ! empty( $request['category'] ) ) {
+
+			$params['cat'] = esc_attr( $request['category'] );
+		}
+
+		add_filter( 'posts_search', array( __CLASS__, '__search_by_title_only' ), 500, 2 );
+
+		$results = new WP_Query( $params );
+
+		remove_filter( 'posts_search', array( __CLASS__, '__search_by_title_only' ), 500 );
+
+		if ( ! empty( $results->posts ) ) {
+
+			return $this->prepare_item_for_response( $results->posts, $request );
+		}
+
+		return $this->prepare_item_for_response( array(), $request );
+	}
+
+	/**
+	 * Limit searches to post title only.
+	 *
+	 * @since 2.0
+	 *
+	 * @param $search
+	 * @param $wp_query
+	 *
+	 * @return string
+	 */
+	public static function __search_by_title_only( $search, $wp_query ) {
+
+		global $wpdb;
+
+		if ( empty( $search ) ) {
+			return $search; // skip processing - no search term in query
+		}
+
+		$q      = $wp_query->query_vars;
+		$n      = ! empty( $q['exact'] ) ? '' : '%';
+		$search = $searchand = '';
+
+		foreach ( (array) $q['search_terms'] as $term ) {
+
+			$term      = esc_sql( $wpdb->esc_like( $term ) );
+			$search    .= "{$searchand}($wpdb->posts.post_title LIKE '{$n}{$term}{$n}')";
+			$searchand = ' AND ';
+		}
+
+		if ( ! empty( $search ) ) {
+
+			$search = " AND ({$search}) ";
+			if ( ! is_user_logged_in() ) {
+				$search .= " AND ($wpdb->posts.post_password = '') ";
+			}
+		}
+
+		return $search;
 	}
 
 	/**

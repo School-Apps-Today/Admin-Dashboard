@@ -11,7 +11,7 @@
  * Plugin Name:       WP REST API - Bulk Delete by Category
  * Plugin URI:        https://connections-pro.com/
  * Description:       Utilizes the WP REST API to bulk delete posts by category from a remote site.
- * Version:           1.0
+ * Version:           2.0
  * Author:            Steven A. Zahm
  * Author URI:        https://connections-pro.com
  * License:           GPL-2.0+
@@ -24,7 +24,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 	final class WP_REST_API_BULK_Delete_By_Category {
 
-		const VERSION = '1.0';
+		const VERSION = '2.0';
 
 		/**
 		 * @var WP_REST_API_BULK_Delete_By_Category Stores the instance of this class.
@@ -88,7 +88,6 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 				$self->includes();
 				$self->hooks();
-				$self->registerCSS();
 			}
 
 			return self::$instance;
@@ -104,9 +103,14 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		 */
 		private function hooks() {
 
-			add_shortcode( 'remote-bulk-delete-button', array( __CLASS__, 'shortcode' ) );
 			add_action( 'rest_api_init', array( 'WP_REST_API_BULK_Delete_By_Category_REST_Controller', 'init' ) );
+
+			add_shortcode( 'remote-bulk-delete-button', array( __CLASS__, 'shortcodeButton' ) );
+			add_shortcode( 'remote-bulk-delete-auto-complete', array( __CLASS__, 'shortcodeAutoComplete' ) );
+
 			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'registerJavaScripts' ) );
+			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'registerCSS' ) );
+			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'enqueueCSS' ) );
 		}
 
 		/**
@@ -129,9 +133,18 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 			wp_register_script(
 				'rbd',
 				$url,
-				array( 'jquery' ),
+				array( 'jquery', 'jquery-ui-autocomplete' ),
 				self::VERSION,
 				TRUE
+			);
+
+			wp_localize_script(
+				'rbd',
+				'wpApiSettings',
+				array(
+					'root'  => esc_url_raw( rest_url() ),
+					'nonce' => wp_create_nonce( 'wp_rest' ),
+				)
 			);
 		}
 
@@ -144,15 +157,38 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		/**
 		 * @since 1.0
 		 */
-		private function registerCSS() {
+		public static function registerCSS() {
 
-			$min    = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
+			$min = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
+			$url = WP_REST_API_BULK_Delete_By_Category()->getURL();
+
+			$wp_scripts = wp_scripts();
+
+			wp_enqueue_style(
+				'jquery-ui-theme-smoothness',
+				sprintf(
+					'//ajax.googleapis.com/ajax/libs/jqueryui/%s/themes/smoothness/jquery-ui.css',
+					// working for https as well now
+					$wp_scripts->registered['jquery-ui-core']->ver
+				),
+				array(),
+				$wp_scripts->registered['jquery-ui-core']->ver
+			);
+
+			wp_register_style(
+				'rbd',
+				"{$url}assets/css/public.css",
+				array( 'jquery-ui-theme-smoothness' ),
+				self::VERSION
+			);
 		}
 
 		/**
 		 * @since 1.0
 		 */
 		public static function enqueueCSS() {
+
+			wp_enqueue_style( 'rbd' );
 		}
 
 		/**
@@ -164,7 +200,110 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		 *
 		 * @return string
 		 */
-		public static function shortcode( $atts, $content = '', $tag = 'remote-bulk-delete-button' ) {
+		public static function shortcodeAutoComplete( $atts, $content = '', $tag = 'remote-bulk-delete-auto-complete' ) {
+
+			$html = '';
+
+			wp_enqueue_script( 'rbd' );
+
+			$defaults = array(
+				'url'           => '',
+				'username'      => '',
+				'app-password'  => '',
+				'category'      => NULL,
+				'trash'         => TRUE,
+				'button-text'   => '',
+				'confirm-text'  => __( 'Are you Sure? This action cannot be undone.', 'wp-rest-api-bulk-delete-by-category' ),
+				'require-login' => TRUE,
+			);
+
+			$atts = shortcode_atts( $defaults, $atts, $tag );
+
+			$atts['category']     = wp_parse_id_list( $atts['category'] );
+			$atts['url']          = filter_var( $atts['url'], FILTER_SANITIZE_URL );
+			$atts['confirm-text'] = sanitize_text_field( $atts['confirm-text'] );
+
+			self::toBoolean( $atts['trash'] );
+			self::toBoolean( $atts['require-login'] );
+
+			if ( ! is_user_logged_in() && $atts['require-login'] ) {
+
+				return $html;
+			}
+
+			if ( 0 > strlen( $atts['url'] ) ) {
+
+				return '<p>' . __( 'Remote site URL must be provided', 'wp-rest-api-bulk-delete-by-category' ) . '</p>';
+			}
+
+			if ( FALSE === filter_var( $atts['url'], FILTER_VALIDATE_URL ) ) {
+
+				return '<p>' . __( 'A valid URL must be provided', 'wp-rest-api-bulk-delete-by-category' ) . '</p>';
+			}
+
+			if ( 0 >= strlen( $atts['username'] ) ) {
+
+				return '<p>' . __( 'A username  must be provided', 'wp-rest-api-bulk-delete-by-category' ) . '</p>';
+			}
+
+			if ( 0 >= strlen( $atts['app-password'] ) ) {
+
+				return '<p>' . sprintf( __( 'An <a href="%s">Application Password</a> must be provided', 'wp-rest-api-bulk-delete-by-category' ), 'https://wordpress.org/plugins/application-passwords/' ) . '</p>';
+			}
+
+			if ( 0 < strlen( $atts['button-text'] ) ) {
+
+				$text = $atts['button-text'];
+
+			} else {
+
+				if ( $atts['trash'] ) {
+
+					$text = sprintf(
+						'Trash selected post from site %1$s.',
+						$atts['url']
+					);
+
+				} else {
+
+					/** @noinspection SqlNoDataSourceInspection */
+					$text = sprintf(
+						'Delete selected post from site %1$s.',
+						$atts['url']
+					);
+				}
+			}
+
+			$html .= '<div class="rbd-post-fieldset">';
+
+			$html .= sprintf(
+				'<input type="text" class="ui-autocomplete-input" placeholder="Search" data-url="%1$s" data-category="%2$s">',
+				trailingslashit( $atts['url'] ),
+				implode( ',', $atts['category'] )
+			);
+
+			$html .= sprintf(
+				'<button class="rbd-post" data-url="%1$s" data-key="%2$s" data-confirm="%3$s" disabled>' . $text . '</button>',
+				trailingslashit( $atts['url'] ),
+				base64_encode( $atts['username'] . ':' . $atts['app-password'] ),
+				$atts['confirm-text']
+			);
+
+			$html .= '</div>';
+
+			return $html;
+		}
+
+		/**
+		 * @since 1.0
+		 *
+		 * @param array  $atts
+		 * @param string $content
+		 * @param string $tag
+		 *
+		 * @return string
+		 */
+		public static function shortcodeButton( $atts, $content = '', $tag = 'remote-bulk-delete-button' ) {
 
 			$html = '';
 
@@ -246,7 +385,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 			}
 
 			$html = sprintf(
-				'<button class="rbd" data-url="%1$s" data-key="%2$s" data-category="%3$d" data-confirm="%4$s">' . $text . '</button>',
+				'<button class="rbd-posts-in-category" data-url="%1$s" data-key="%2$s" data-category="%3$d" data-confirm="%4$s">' . $text . '</button>',
 				trailingslashit( $atts['url'] ),
 				base64_encode( $atts['username'] . ':' . $atts['app-password'] ),
 				$atts['category'],
