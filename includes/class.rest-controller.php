@@ -71,7 +71,9 @@ class WP_REST_API_BULK_Delete_By_Category_REST_Controller extends WP_REST_Contro
 	}
 
 	/**
-	 * Delete one item from the collection
+	 * Delete one item from the collection.
+	 *
+	 * @since 1.0
 	 *
 	 * @param WP_REST_Request $request Full data about the request.
 	 *
@@ -114,6 +116,14 @@ class WP_REST_API_BULK_Delete_By_Category_REST_Controller extends WP_REST_Contro
 		return current_user_can( 'delete_posts' );
 	}
 
+	/**
+	 * @since 1.0
+	 *
+	 * @param mixed           $item
+	 * @param WP_REST_Request $request
+	 *
+	 * @return mixed|WP_Error|WP_REST_Response
+	 */
 	public function prepare_item_for_response( $item, $request ) {
 
 		$response = rest_ensure_response( $item );
@@ -121,6 +131,13 @@ class WP_REST_API_BULK_Delete_By_Category_REST_Controller extends WP_REST_Contro
 		return $response;
 	}
 
+	/**
+	 * @since 1.0
+	 *
+	 * @param $options
+	 *
+	 * @return array
+	 */
 	private function queryPosts( $options ) {
 
 		$defaults = array(
@@ -143,6 +160,8 @@ class WP_REST_API_BULK_Delete_By_Category_REST_Controller extends WP_REST_Contro
 
 	/**
 	 * Delete posts by ids.
+	 *
+	 * @since 1.0
 	 *
 	 * @param int[] $postIDs     List of post ids to delete.
 	 * @param bool  $forceDelete True to force delete posts, False otherwise.
