@@ -170,7 +170,7 @@
 			var text = $this.text();
 			var url  = $this.data( 'url' );
 			var key  = $this.data( 'key' );
-			var post = $this.data( 'post' );
+			var post = $this.attr( 'data-post' );
 
 			$.ajax({
 				method:     'DELETE',
