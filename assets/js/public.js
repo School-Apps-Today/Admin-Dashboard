@@ -124,8 +124,16 @@
 				url:        url + 'wp-json/rbd-api/v1/delete-posts-in/' + cat,
 				dataType:   'json',
 				beforeSend: function( xhr ) {
+
 					xhr.setRequestHeader( 'Authorization', 'Basic ' + key );
-					xhr.setRequestHeader( 'X-WP-Nonce', wpApiSettings.nonce );
+
+					var matcher = new RegExp( '^' + url, 'i' );
+
+					if ( matcher.test( wpApiSettings.root ) ) {
+
+						xhr.setRequestHeader( 'X-WP-Nonce', wpApiSettings.nonce );
+					}
+
 					$this.prop( 'disabled', true ).text( 'Processing, please wait.' );
 				},
 				success: function( response ) {
@@ -169,8 +177,16 @@
 				url:        url + 'wp-json/wp/v2/posts/' + post,
 				dataType:   'json',
 				beforeSend: function( xhr ) {
+
 					xhr.setRequestHeader( 'Authorization', 'Basic ' + key );
-					xhr.setRequestHeader( 'X-WP-Nonce', wpApiSettings.nonce );
+
+					var matcher = new RegExp( '^' + url, 'i' );
+
+					if ( matcher.test( wpApiSettings.root ) ) {
+
+						xhr.setRequestHeader( 'X-WP-Nonce', wpApiSettings.nonce );
+					}
+
 					$this.prop( 'disabled', true ).text( 'Processing, please wait.' );
 				},
 				success: function( response ) {
