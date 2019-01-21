@@ -192,6 +192,9 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		}
 
 		/**
+		 * Renders an autocomplete input which will search a remote site by post title for matches. If the user selects
+		 * a found post, they will have the option to delete the remote post.
+		 * 
 		 * @since 1.0
 		 *
 		 * @param array  $atts
@@ -295,6 +298,8 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		}
 
 		/**
+		 * Shortcode which renders a button which can be configured to bulk delete all posts within the specified category.
+		 *
 		 * @since 1.0
 		 *
 		 * @param array  $atts

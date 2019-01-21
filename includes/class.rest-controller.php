@@ -158,6 +158,8 @@ class WP_REST_API_BULK_Delete_By_Category_REST_Controller extends WP_REST_Contro
 	}
 
 	/**
+	 * Callback for the `posts_search` filter.
+	 *
 	 * Limit searches to post title only.
 	 *
 	 * @since 2.0
