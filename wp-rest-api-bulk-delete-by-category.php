@@ -95,6 +95,9 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 		private function includes() {
 
+			require_once( 'includes/class.pageloader-settings.php');
+			require_once( 'includes/class.rest-controller-pageloader-settings.php' );
+
 			require_once( 'includes/class.rest-controller.php' );
 		}
 
@@ -104,6 +107,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		private function hooks() {
 
 			add_action( 'rest_api_init', array( 'WP_REST_API_BULK_Delete_By_Category_REST_Controller', 'init' ) );
+			add_action( 'rest_api_init', array( 'WP_REST_Controller_PageLoader_Settings', 'init' ) );
 
 			add_shortcode( 'remote-bulk-delete-button', array( __CLASS__, 'shortcodeButton' ) );
 			add_shortcode( 'remote-bulk-delete-auto-complete', array( __CLASS__, 'shortcodeAutoComplete' ) );
@@ -194,7 +198,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		/**
 		 * Renders an autocomplete input which will search a remote site by post title for matches. If the user selects
 		 * a found post, they will have the option to delete the remote post.
-		 * 
+		 *
 		 * @since 1.0
 		 *
 		 * @param array  $atts
