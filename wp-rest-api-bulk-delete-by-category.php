@@ -111,6 +111,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 			add_shortcode( 'remote-bulk-delete-button', array( __CLASS__, 'shortcodeButton' ) );
 			add_shortcode( 'remote-bulk-delete-auto-complete', array( __CLASS__, 'shortcodeAutoComplete' ) );
+			add_shortcode( 'remote-pageloader-settings', array( __CLASS__, 'shortcodePageLoaderSettings') );
 
 			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'registerJavaScripts' ) );
 			add_action( 'wp_enqueue_scripts', array( __CLASS__, 'registerCSS' ) );
@@ -119,10 +120,22 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 		/**
 		 * @since 1.0
+		 *
+		 * @return string
 		 */
 		public function getURL() {
 
 			return $this->url;
+		}
+
+		/**
+		 * @since 2.0
+		 *
+		 * @return string
+		 */
+		public function getPath() {
+
+			return $this->path;
 		}
 
 		/**
@@ -132,19 +145,37 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 			$min = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
 			$url = WP_REST_API_BULK_Delete_By_Category()->getURL();
-			$url = "{$url}assets/js/public.js";
+
+			$path = WP_REST_API_BULK_Delete_By_Category()->getPath();
 
 			wp_register_script(
 				'rbd',
-				$url,
+				"{$url}assets/js/public.js",
 				array( 'jquery', 'jquery-ui-autocomplete' ),
-				self::VERSION,
+				self::VERSION . '-' . filemtime( "{$path}assets/js/public.js" ),
 				TRUE
 			);
 
 			wp_localize_script(
 				'rbd',
 				'wpApiSettings',
+				array(
+					'root'  => esc_url_raw( rest_url() ),
+					'nonce' => wp_create_nonce( 'wp_rest' ),
+				)
+			);
+
+			wp_register_script(
+				'pageloader-remote',
+				"{$url}assets/js/pageloader-remote.js",
+				array( 'jquery' ),
+				self::VERSION . '-' . filemtime( "{$path}assets/js/pageloader-remote.js" ),
+				TRUE
+			);
+
+			wp_localize_script(
+				'pageloader-remote',
+				'pageloaderAPISettings',
 				array(
 					'root'  => esc_url_raw( rest_url() ),
 					'nonce' => wp_create_nonce( 'wp_rest' ),
@@ -167,6 +198,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 			$url = WP_REST_API_BULK_Delete_By_Category()->getURL();
 
 			$wp_scripts = wp_scripts();
+			$path       = WP_REST_API_BULK_Delete_By_Category()->getPath();
 
 			wp_enqueue_style(
 				'jquery-ui-theme-smoothness',
@@ -183,7 +215,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 				'rbd',
 				"{$url}assets/css/public.css",
 				array( 'jquery-ui-theme-smoothness' ),
-				self::VERSION
+				self::VERSION . '-' . filemtime( "{$path}assets/css/public.css" )
 			);
 		}
 
@@ -400,6 +432,123 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 				$atts['category'],
 				$atts['confirm-text']
 			);
+
+			return $html;
+		}
+
+		/**
+		 * Shortcode which renders the Pageloader options.
+		 *
+		 * @since 2.0
+		 *
+		 * @param array   $atts
+		 * @param string $content
+		 * @param string $tag
+		 *
+		 * @return string
+		 */
+		public static function shortcodePageLoaderSettings( $atts, $content = '', $tag = 'remote-pageloader-settings' ) {
+
+			$html = '';
+
+			$defaults = array(
+				'url'           => '',
+				'username'      => '',
+				'app-password'  => '',
+				'require-login' => TRUE,
+			);
+
+			$atts = shortcode_atts( $defaults, $atts, $tag );
+
+			self::toBoolean( $atts['trash'] );
+			self::toBoolean( $atts['require-login'] );
+
+			if ( ! is_user_logged_in() && $atts['require-login'] ) {
+
+				return $html;
+			}
+
+			if ( 0 > strlen( $atts['url'] ) ) {
+
+				return '<p>' . __( 'Remote site URL must be provided', 'wp-rest-api-bulk-delete-by-category' ) . '</p>';
+			}
+
+			if ( FALSE === filter_var( $atts['url'], FILTER_VALIDATE_URL ) ) {
+
+				return '<p>' . __( 'A valid URL must be provided', 'wp-rest-api-bulk-delete-by-category' ) . '</p>';
+			}
+
+			if ( 0 >= strlen( $atts['username'] ) ) {
+
+				return '<p>' . __( 'A username  must be provided', 'wp-rest-api-bulk-delete-by-category' ) . '</p>';
+			}
+
+			if ( 0 >= strlen( $atts['app-password'] ) ) {
+
+				return '<p>' . sprintf( __( 'An <a href="%s">Application Password</a> must be provided', 'wp-rest-api-bulk-delete-by-category' ), 'https://wordpress.org/plugins/application-passwords/' ) . '</p>';
+			}
+
+			$html .= '<div class="pageloader-options" style="position: relative;">';
+
+			$html .= '<div class="pageloader-options-loading-overlay">';
+			$html .= '<div class="pageloader-options-loading"></div>';
+			$html .= '</div>'; // .pageloader-options-loading-overlay
+
+			$html .= '<div class="pageloader-image-option">';
+
+			/*
+			 * Choose loading image.
+			 */
+			$html .= '<div class="pageloader-choose-image" style="display: none;">';
+			$html .= '<div class="pageloader-actions" style="margin: 16px 0;">';
+			$html .= '<label for="pageloader-image-select">' . __( 'Choose the page loading image to display.', 'wp-rest-api-bulk-delete-by-category' ) . '</label>';
+			$html .= '<input type="file" accept="image/gif, image/png, image/jpeg" id="pageloader-image-select" name="pageloader-image-select">';
+			$html .= '</div>'; // .pageloader-actions
+			$html .= '</div>'; // .pageloader-choose-image
+
+			/*
+			 * Manage loading image.
+			 */
+			$html .= '<div class="pageloader-manage-image" style="display: none;">';
+
+			$html .= '<div class="pageloader-image" style="text-align: center; width: 100%;">';
+			$html .= '<img class="pageloader-image" src="" style="margin: 0 auto;" />';
+			//$html .= '<input type="hidden" name="pageloader_custom_loading_image" value="" />';
+			$html .= '</div>';
+
+			$html .= '<div class="pageloader-actions" style="margin: 8px 0 16px;; text-align: center;">';
+			$html .= '<button type="button" class="pageloader-image-remove" style="margin: 0 10px 0 0;">' . __( 'Remove', 'wp-rest-api-bulk-delete-by-category' ) . '</button>';
+			$html .= '<button type="button" class="pageloader-image-change" style="margin: 0 10px 0 0;">' . __( 'Change', 'wp-rest-api-bulk-delete-by-category' ) . '</button>';
+			$html .= '</div>'; // .pageloader-actions
+
+			$html .= '</div>'; // .pageloader-manage-image
+
+			$html .= '</div>'; // .pageloader-image-option
+
+			/*
+			 * Manage loading text.
+			 */
+			$html .= '<div class="pageloader-text-option">';
+			$html .= '<label for="bonfire_pageloader_custom_loading_text">' . __( 'Enter the loading text to display.', 'wp-rest-api-bulk-delete-by-category' ) . '</label>';
+			$html .= '<input type="text" id="bonfire_pageloader_custom_loading_text" name="bonfire_pageloader_custom_loading_text" value="" style="width: 100%;" />';
+			$html .= '</div>'; // .pageloader-text-option
+
+			/*
+			 * Pageloader actions.
+			 */
+			$html .= '<div class="pageloader-actions" style="margin: 24px 0; text-align: right;">';
+
+			$html .= sprintf(
+				'<button type="button" class="pageloader-save" data-url="%1$s" data-key="%2$s">' . __( 'Save Changes', 'wp-rest-api-bulk-delete-by-category' ) . '</button>',
+				trailingslashit( $atts['url'] ),
+				base64_encode( $atts['username'] . ':' . $atts['app-password'] )
+			);
+
+			$html .= '</div>'; // .pageloader-actions
+
+			$html .= '</div>'; // .pageloader-options
+
+			wp_enqueue_script( 'pageloader-remote' );
 
 			return $html;
 		}
