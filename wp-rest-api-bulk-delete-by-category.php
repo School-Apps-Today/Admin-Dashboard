@@ -1,22 +1,22 @@
 <?php
 /**
- * @package   WP REST API - Bulk Delete by Category
+ * @package   School Apps Today - Admin Dashboard
  * @category  plugin
  * @author    Steven A. Zahm
  * @license   GPL-2.0+
  * @link      https://connections-pro.com
- * @copyright 2018 Steven A. Zahm
+ * @copyright 2019 Steven A. Zahm
  *
  * @wordpress-plugin
- * Plugin Name:       WP REST API - Bulk Delete by Category
+ * Plugin Name:       School Apps Today - Admin Dashboard
  * Plugin URI:        https://connections-pro.com/
- * Description:       Utilizes the WP REST API to bulk delete posts by category from a remote site.
- * Version:           2.0
+ * Description:       Frontend Content Management Admin Dashboard
+ * Version:           1.0
  * Author:            Steven A. Zahm
  * Author URI:        https://connections-pro.com
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
- * Text Domain:       wp-rest-api-bulk-delete-by-category
+ * Text Domain:       sat/admin-dashboard
  * Domain Path:       /languages
  */
 
