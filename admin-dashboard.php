@@ -24,7 +24,7 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 
 	final class WP_REST_API_BULK_Delete_By_Category {
 
-		const VERSION = '2.0';
+		const VERSION = '1.0';
 
 		/**
 		 * @var WP_REST_API_BULK_Delete_By_Category Stores the instance of this class.
