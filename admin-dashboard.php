@@ -90,17 +90,27 @@ if ( ! class_exists( 'Admin_Dashboard' ) ) {
 
 				$self->includes();
 				$self->hooks();
+
+				// Register editor blocks.
+				Blocks::register();
 			}
 
 			return self::$instance;
 		}
 
+		/**
+		 * @since 1.0
+		 */
 		private function includes() {
 
 			require_once( 'includes/class.pageloader-settings.php');
 			require_once( 'includes/class.rest-controller-pageloader-settings.php' );
 
 			require_once( 'includes/class.rest-controller.php' );
+
+			// Blocks
+			require_once( 'includes/blocks/class.blocks.php' );
+			require_once( 'includes/blocks/term-datatable/block.php' );
 		}
 
 		/**
