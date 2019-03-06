@@ -20,14 +20,16 @@
  * Domain Path:       /languages
  */
 
-if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
+namespace School_Apps_Today;
 
-	final class WP_REST_API_BULK_Delete_By_Category {
+if ( ! class_exists( 'Admin_Dashboard' ) ) {
+
+	final class Admin_Dashboard {
 
 		const VERSION = '1.0';
 
 		/**
-		 * @var WP_REST_API_BULK_Delete_By_Category Stores the instance of this class.
+		 * @var Admin_Dashboard Stores the instance of this class.
 		 *
 		 * @since 1.0
 		 */
@@ -144,9 +146,9 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		public static function registerJavaScripts() {
 
 			$min = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
-			$url = WP_REST_API_BULK_Delete_By_Category()->getURL();
+			$url = SAT_Admin_Dashboard()->getURL();
 
-			$path = WP_REST_API_BULK_Delete_By_Category()->getPath();
+			$path = SAT_Admin_Dashboard()->getPath();
 
 			wp_register_script(
 				'rbd',
@@ -195,10 +197,10 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 		public static function registerCSS() {
 
 			$min = defined('SCRIPT_DEBUG') && SCRIPT_DEBUG ? '' : '.min';
-			$url = WP_REST_API_BULK_Delete_By_Category()->getURL();
+			$url = SAT_Admin_Dashboard()->getURL();
 
 			$wp_scripts = wp_scripts();
-			$path       = WP_REST_API_BULK_Delete_By_Category()->getPath();
+			$path       = SAT_Admin_Dashboard()->getPath();
 
 			wp_enqueue_style(
 				'jquery-ui-theme-smoothness',
@@ -582,12 +584,12 @@ if ( ! class_exists( 'WP_REST_API_BULK_Delete_By_Category' ) ) {
 	/**
 	 * @since 1.0
 	 *
-	 * @return WP_REST_API_BULK_Delete_By_Category
+	 * @return Admin_Dashboard
 	 */
-	function WP_REST_API_BULK_Delete_By_Category() {
+	function SAT_Admin_Dashboard() {
 
-		return WP_REST_API_BULK_Delete_By_Category::instance();
+		return Admin_Dashboard::instance();
 	}
 
-	WP_REST_API_BULK_Delete_By_Category();
+	SAT_Admin_Dashboard();
 }
