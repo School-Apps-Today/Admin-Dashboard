@@ -34,14 +34,18 @@ class TermDatatable extends Component {
 
 		super( ...arguments );
 
+		const { perPage, taxonomy } = this.props;
+
 		this.fetchTerms = this.fetchTerms.bind( this );
 		this.renderEditable = this.renderEditable.bind( this );
 
 		this.state = {
 			data:     [],
 			loading:  true,
+			page:     0,
 			pages:    null,
-			taxonomy: null,
+			perPage:  perPage,
+			taxonomy: taxonomy,
 		};
 
 		console.log( 'constructorDidRun', true );
@@ -56,12 +60,35 @@ class TermDatatable extends Component {
 	}
 
 	componentDidUpdate() {
+
+		if ( this.props.taxonomy !== this.state.taxonomy ) {
+
+			console.log( 'componentDidUpdate(state)', this.state.taxonomy );
+			console.log( 'componentDidUpdate(props)', this.props.taxonomy );
+			// this.table.fireFetchData();
+
+			const state = {
+				data:     [],
+				page:     0,
+				pages:    null,
+				taxonomy: this.props.taxonomy,
+			};
+
+			this.setState( state );
+
+			console.log( state );
+			this.fetchTerms( state );
+		}
+
 		console.log( 'componentDidUpdate', true );
 	}
 
 	fetchTerms( state, instance ) {
 
-		this.setState( { loading: true } );
+		this.setState( {
+			loading: true,
+			// page:    state.page,
+		} );
 
 		const { taxonomy } = this.props;
 
@@ -141,11 +168,18 @@ class TermDatatable extends Component {
 		);
 	}
 
+	changePage( pageIndex ) {
+		console.log( `changePage(pageIndex: ${ pageIndex })` );
+		this.setState( {
+			page: pageIndex
+		} );
+	}
+
 	render() {
 
-		const { perPage, taxonomy, } = this.props;
+		// const { perPage, taxonomy, } = this.props;
 
-		const { data, pages, loading } = this.state;
+		const { data, loading, page, pages, perPage, taxonomy } = this.state;
 
 		return (
 			<SelectTable
@@ -175,10 +209,12 @@ class TermDatatable extends Component {
 				] }
 				data={ data }
 				defaultPageSize={ perPage }
-				onFetchData={ this.fetchTerms }
+				onFetchData={ state => this.fetchTerms( state ) }
 				keyField='id'
 				loading={ loading }
 				manual
+				onPageChange={ pageIndex => this.changePage( pageIndex ) }
+				page={ page }
 				pages={ pages }
 				selectType={ 'checkbox' }
 			/>
