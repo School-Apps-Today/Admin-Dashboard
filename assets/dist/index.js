@@ -274,7 +274,9 @@ var _wp$i18n = wp.i18n,
     sprintf = _wp$i18n.sprintf;
 var _wp = wp,
     apiFetch = _wp.apiFetch;
-var compose = wp.compose.compose;
+var _wp$compose = wp.compose,
+    compose = _wp$compose.compose,
+    withState = _wp$compose.withState;
 var withSelect = wp.data.withSelect;
 var Component = wp.element.Component;
 var addQueryArgs = wp.url.addQueryArgs;
@@ -300,13 +302,18 @@ function (_Component) {
     _babel_runtime_helpers_classCallCheck__WEBPACK_IMPORTED_MODULE_2___default()(this, TermDatatable);
 
     _this = _babel_runtime_helpers_possibleConstructorReturn__WEBPACK_IMPORTED_MODULE_4___default()(this, _babel_runtime_helpers_getPrototypeOf__WEBPACK_IMPORTED_MODULE_5___default()(TermDatatable).apply(this, arguments));
+    var _this$props = _this.props,
+        perPage = _this$props.perPage,
+        taxonomy = _this$props.taxonomy;
     _this.fetchTerms = _this.fetchTerms.bind(_babel_runtime_helpers_assertThisInitialized__WEBPACK_IMPORTED_MODULE_6___default()(_this));
     _this.renderEditable = _this.renderEditable.bind(_babel_runtime_helpers_assertThisInitialized__WEBPACK_IMPORTED_MODULE_6___default()(_this));
     _this.state = {
       data: [],
       loading: true,
+      page: 0,
       pages: null,
-      taxonomy: null
+      perPage: perPage,
+      taxonomy: taxonomy
     };
     console.log('constructorDidRun', true);
     return _this;
@@ -325,6 +332,21 @@ function (_Component) {
   }, {
     key: "componentDidUpdate",
     value: function componentDidUpdate() {
+      if (this.props.taxonomy !== this.state.taxonomy) {
+        console.log('componentDidUpdate(state)', this.state.taxonomy);
+        console.log('componentDidUpdate(props)', this.props.taxonomy); // this.table.fireFetchData();
+
+        var state = {
+          data: [],
+          page: 0,
+          pages: null,
+          taxonomy: this.props.taxonomy
+        };
+        this.setState(state);
+        console.log(state);
+        this.fetchTerms(state);
+      }
+
       console.log('componentDidUpdate', true);
     }
   }, {
@@ -333,7 +355,8 @@ function (_Component) {
       var _this2 = this;
 
       this.setState({
-        loading: true
+        loading: true // page:    state.page,
+
       });
       var taxonomy = this.props.taxonomy;
       console.log('fetchData', taxonomy);
@@ -409,15 +432,26 @@ function (_Component) {
       });
     }
   }, {
+    key: "changePage",
+    value: function changePage(pageIndex) {
+      console.log("changePage(pageIndex: ".concat(pageIndex, ")"));
+      this.setState({
+        page: pageIndex
+      });
+    }
+  }, {
     key: "render",
     value: function render() {
-      var _this$props = this.props,
-          perPage = _this$props.perPage,
-          taxonomy = _this$props.taxonomy;
+      var _this4 = this;
+
+      // const { perPage, taxonomy, } = this.props;
       var _this$state = this.state,
           data = _this$state.data,
+          loading = _this$state.loading,
+          page = _this$state.page,
           pages = _this$state.pages,
-          loading = _this$state.loading;
+          perPage = _this$state.perPage,
+          taxonomy = _this$state.taxonomy;
       return wp.element.createElement(SelectTable, {
         className: '-striped -highlight',
         columns: [{
@@ -439,10 +473,16 @@ function (_Component) {
         }],
         data: data,
         defaultPageSize: perPage,
-        onFetchData: this.fetchTerms,
+        onFetchData: function onFetchData(state) {
+          return _this4.fetchTerms(state);
+        },
         keyField: 'id',
         loading: loading,
         manual: true,
+        onPageChange: function onPageChange(pageIndex) {
+          return _this4.changePage(pageIndex);
+        },
+        page: page,
         pages: pages,
         selectType: 'checkbox'
       });
